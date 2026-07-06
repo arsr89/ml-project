@@ -1,3 +1,4 @@
+cat > .gitignore <<'EOF'
 __pycache__/
 *.pyc
 .venv/
@@ -5,9 +6,12 @@ __pycache__/
 *.log
 data/raw/*
 !data/raw/.gitkeep
+!data/raw/*.dvc
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/*.dvc
 *.pkl
 *.h5
 mlruns/
 .ipynb_checkpoints/
+EOF
