@@ -1,3 +1,4 @@
+cat > .github/workflows/ci.yml <<'EOF'
 name: CI
 
 on:
@@ -7,14 +8,28 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  train:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Run tests
+
+      - name: Run unit tests
         run: pytest tests/ || true
+
+      - name: Pull data from S3 via DVC
+        run: dvc pull
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-south-1
+
+      - name: Train model and log to MLflow
+        run: python src/models/train.py || true
+EOF
