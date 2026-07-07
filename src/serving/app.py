@@ -1,31 +1,38 @@
 """
-Minimal model-serving API.
-Swap `load_model()` for mlflow.pyfunc.load_model("models:/<name>/Production")
-once you have a registered model.
+Model-serving API for the churn prediction model.
 """
 from fastapi import FastAPI
 from pydantic import BaseModel
 from prometheus_fastapi_instrumentator import Instrumentator
+import mlflow.pyfunc
 
-app = FastAPI(title="Model Serving API")
-Instrumentator().instrument(app).expose(app)  # exposes /metrics for Prometheus
+app = FastAPI(title="Churn Prediction API")
+Instrumentator().instrument(app).expose(app)
 
-
-class PredictRequest(BaseModel):
-    features: list[float]
-
-
-def load_model():
-    # Placeholder — replace with:
-    # import mlflow
-    # return mlflow.pyfunc.load_model("models:/your-model/Production")
-    class DummyModel:
-        def predict(self, X):
-            return [sum(row) for row in X]
-    return DummyModel()
+mlflow.set_tracking_uri("http://localhost:5000")
+model = mlflow.pyfunc.load_model("models:/churn-model@production")
 
 
-model = load_model()
+class ChurnRequest(BaseModel):
+    gender: str
+    SeniorCitizen: int
+    Partner: str
+    Dependents: str
+    tenure: int
+    PhoneService: str
+    MultipleLines: str
+    InternetService: str
+    OnlineSecurity: str
+    OnlineBackup: str
+    DeviceProtection: str
+    TechSupport: str
+    StreamingTV: str
+    StreamingMovies: str
+    Contract: str
+    PaperlessBilling: str
+    PaymentMethod: str
+    MonthlyCharges: float
+    TotalCharges: float
 
 
 @app.get("/health")
@@ -34,6 +41,8 @@ def health():
 
 
 @app.post("/predict")
-def predict(req: PredictRequest):
-    prediction = model.predict([req.features])
-    return {"prediction": prediction}
+def predict(req: ChurnRequest):
+    import pandas as pd
+    df = pd.DataFrame([req.dict()])
+    prediction = model.predict(df)
+    return {"churn_prediction": int(prediction[0])}
